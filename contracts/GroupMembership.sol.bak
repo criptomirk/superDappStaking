@@ -1,0 +1,193 @@
+// // SPDX-License-Identifier: MIT
+// pragma solidity ^0.8.13;
+
+// import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+// import "hardhat/console.sol";
+// import {SafeMath} from "./Dev/lib/SafeMath.sol";
+
+// contract GroupMembership is ERC721 {
+//     using SafeMath for uint256;
+
+//     enum GroupType {
+//         ANNOUNCEMENT,
+//         SOCIAL
+//     }
+//     struct Group {
+//         uint32 supply;
+//         uint32 index;
+//         GroupType groupType;
+//         uint256 sumGroupBondValues;
+//         uint256 sumGroupTimestamp;
+//         address creator;
+//         uint256 minimumJoinAmount;
+//     }
+
+//     event GroupCreated(
+//         uint256 groupId,
+//         address creator,
+//         uint256 minimumJoinAmount,
+//         GroupType groupType
+//     );
+//     event GroupJoined(uint256 groupId, address member, uint256 groupFee);
+//     event GroupLeft(uint256 groupId, address member);
+
+//     mapping(uint256 => Group) public groups;
+//     mapping(uint256 => uint256) public originalGroupBondValues;
+//     mapping(uint256 => uint256) public originalSumGroupBondValues;
+//     mapping(uint256 => uint256) public joinTimestamps;
+
+//     constructor() ERC721("GroupMembership", "GM") {}
+
+//     function createGroup(
+//         uint256 minimumJoinAmount,
+//         uint256 groupId,
+//         GroupType _type,
+//         address creator
+//     ) public {
+//         require(!groupExists(groupId), "Group already exists");
+//         Group storage newGroup = groups[groupId];
+//         newGroup.creator = creator;
+//         newGroup.minimumJoinAmount = minimumJoinAmount;
+//         newGroup.groupType = _type;
+//         emit GroupCreated(groupId, creator, minimumJoinAmount, _type);
+//     }
+
+//     function joinGroup(
+//         uint256 groupId,
+//         uint256 originalBondPrice,
+//         uint256 bondPriceMinusFee,
+//         address owner
+//     ) public returns (uint256) {
+//         Group storage group = groups[groupId];
+//         require(
+//             originalBondPrice >= group.minimumJoinAmount,
+//             "Insufficient group payment"
+//         );
+//         group.supply += 1;
+//         group.index += 1;
+//         group.sumGroupBondValues = group.sumGroupBondValues.add(
+//             bondPriceMinusFee
+//         );
+//         group.sumGroupTimestamp = group.sumGroupTimestamp.add(block.timestamp);
+
+//         uint256 tokenId = groupId.mul(10 ** 12).add(group.index);
+//         _mint(owner, tokenId);
+
+//         originalSumGroupBondValues[tokenId] = group.sumGroupBondValues;
+//         originalGroupBondValues[tokenId] = bondPriceMinusFee;
+//         joinTimestamps[tokenId] = block.timestamp;
+//         emit GroupJoined(groupId, owner, bondPriceMinusFee);
+//         return tokenId;
+//     }
+
+//     function calculateProfit(
+//         uint256 tokenId,
+//         uint256 currentSumGroupBondValues,
+//         uint256 sumGroupTimestamp,
+//         uint256 supply,
+//         GroupType groupType
+//     ) internal view returns (uint256) {
+//         uint256 originalSumGroupBondValue = originalSumGroupBondValues[tokenId];
+//         uint256 originalBondValue = originalGroupBondValues[tokenId];
+//         // uint256 groupFee = originalBondValue.mul(40).div(100);
+//         uint256 groupFee = originalBondValue.mul(14).div(100);
+
+//         // Calculate the change in total fees since the member joined
+//         uint256 bondValueChange = 0;
+//         if (currentSumGroupBondValues > originalSumGroupBondValue) {
+//             bondValueChange = currentSumGroupBondValues.sub(
+//                 originalSumGroupBondValue
+//             );
+//         }
+//         uint256 profitShare = groupFee.mul(bondValueChange).div(
+//             currentSumGroupBondValues
+//         );
+//         if (profitShare > currentSumGroupBondValues) {
+//             profitShare = currentSumGroupBondValues;
+//         }
+//         uint256 avgGroupAge = block.timestamp.sub(
+//             sumGroupTimestamp.div(supply)
+//         );
+//         uint256 timeBonus = 0;
+//         if (groupType == GroupType.ANNOUNCEMENT) {
+//             if (avgGroupAge >= 4 hours) {
+//                 timeBonus = originalBondValue.mul(10).div(100);
+//             } else if (avgGroupAge >= 2 hours) {
+//                 timeBonus = originalBondValue.mul(5).div(100);
+//             } else if (avgGroupAge >= 1 hours) {
+//                 timeBonus = originalBondValue.mul(2).div(100);
+//             }
+//         } else {
+//             // GroupType.SOCIAL
+//             if (avgGroupAge >= 365 days) {
+//                 timeBonus = originalBondValue.mul(10).div(100);
+//             } else if (avgGroupAge >= 180 days) {
+//                 timeBonus = originalBondValue.mul(5).div(100);
+//             } else if (avgGroupAge >= 30 days) {
+//                 timeBonus = originalBondValue.mul(2).div(100);
+//             }
+//         }
+//         return
+//             originalBondValue.mul(80).div(100).add(profitShare).add(timeBonus);
+//     }
+
+//     function leaveGroup(
+//         uint256 groupId,
+//         uint256 tokenId,
+//         address owner
+//     ) public returns (uint256, uint256) {
+//         require(
+//             ownerOf(tokenId) == owner,
+//             "You are not a member of this group"
+//         );
+//         Group storage group = groups[groupId];
+//         console.log("before::calculateProfit");
+//         uint256 returnAmount = calculateProfit(
+//             tokenId,
+//             group.sumGroupBondValues,
+//             group.sumGroupTimestamp,
+//             group.supply,
+//             group.groupType
+//         );
+
+//         console.log("returnAmount: %s", returnAmount);
+
+//         _burn(tokenId);
+//         group.sumGroupTimestamp = group.sumGroupTimestamp.sub(
+//             joinTimestamps[tokenId]
+//         );
+
+//         group.supply -= 1;
+//         console.log("group.sumGroupBondValues: %s", group.sumGroupBondValues);
+//         group.sumGroupBondValues = group.sumGroupBondValues.sub(returnAmount);
+
+//         delete originalGroupBondValues[tokenId];
+//         delete joinTimestamps[tokenId];
+//         delete originalSumGroupBondValues[tokenId];
+
+//         emit GroupLeft(groupId, owner);
+//         if (group.supply == 0) {
+//             uint256 supply = group.sumGroupBondValues;
+//             group.sumGroupBondValues = 0;
+//             return (returnAmount, supply);
+//         } else {
+//             return (returnAmount, 0);
+//         }
+//     }
+
+//     function groupExists(uint256 groupId) public view returns (bool) {
+//         return groups[groupId].creator != address(0);
+//     }
+
+//     function groupMembershipExists(uint256 tokenId) public view returns (bool) {
+//         return _exists(tokenId);
+//     }
+
+//     function getGroupCreator(uint256 groupId) public view returns (address) {
+//         return groups[groupId].creator;
+//     }
+
+//     function _exists(uint256 tokenId) internal view virtual returns (bool) {
+//         return ownerOf([tokenId]) != address(0);
+//     }
+// }

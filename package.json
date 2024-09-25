@@ -1,0 +1,51 @@
+{
+  "name": "hardhat-project",
+  "scripts": {
+    "simulation:basic": "npx hardhat run ./scripts/mathTests/testMarketBasic.ts --network localhost",
+    "simulation:share": "bash ./share-tests-results.sh",
+    "simulation:ui": "cd ./charts-ui && npm run start",
+    "flatten": "npx hardhat flatten  >> './flatten.sol'"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.2",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@openzeppelin/contracts-upgradeable": "^5.0.1",
+    "@openzeppelin/hardhat-upgrades": "^3.0.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^18.19.3",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "bn.js": "^5.2.1",
+    "create-react-app": "^5.0.1",
+    "dotenv": "^16.3.1",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.10.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.1",
+    "eslint-plugin-promise": "^5.2.0",
+    "ethers": "^6.9.0",
+    "hardhat": "^2.22.12",
+    "prettier": "^2.8.8",
+    "prettier-plugin-solidity": "^1.2.0",
+    "solhint": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "description": "Superdapp contracts.",
+  "version": "1.0.0",
+  "main": ".eslintrc.js",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

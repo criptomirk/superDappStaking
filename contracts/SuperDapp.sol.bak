@@ -1,0 +1,139 @@
+// // SPDX-License-Identifier: MIT
+// pragma solidity ^0.8.13;
+
+// import "./GroupMembership.sol";
+// import "@openzeppelin/contracts/access/Ownable.sol";
+// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "hardhat/console.sol";
+
+// contract SuperDapp is Ownable {
+//     uint256 public protocolFeePercent = 2;
+//     uint256 public subjectFeePercent = 4;
+
+//     address public treasuryAddress;
+
+//     IERC20 public suprToken;
+//     mapping(address => uint256) public mapDeposits;
+//     GroupMembership public groupMembership;
+
+//     event BoughtShares(
+//         address indexed buyer,
+//         uint256 groupId,
+//         uint256 tokenId,
+//         uint256 amount
+//     );
+//     event SoldShares(
+//         address indexed seller,
+//         uint256 groupId,
+//         uint256 tokenId,
+//         uint256 amount
+//     );
+//     event Deposit(address indexed account, uint256 amount);
+//     event Withdraw(address indexed account, uint256 amount);
+//     event Transfer(
+//         address indexed fromAccount,
+//         address indexed toAccount,
+//         uint256 amount
+//     );
+
+//     constructor(address _treasuryAddress, address _suprToken) {
+//         require(_treasuryAddress != address(0), "Invalid address");
+//         groupMembership = new GroupMembership();
+//         treasuryAddress = _treasuryAddress;
+//         suprToken = IERC20(_suprToken);
+//     }
+
+//     function balanceOf(address account) public view returns (uint256) {
+//         return mapDeposits[account];
+//     }
+
+//     function createGroup(
+//         uint256 minimumJoinAmount,
+//         uint256 groupId,
+//         GroupMembership.GroupType groupType
+//     ) public {
+//         groupMembership.createGroup(
+//             minimumJoinAmount,
+//             groupId,
+//             groupType,
+//             msg.sender
+//         );
+//     }
+
+//     function setProtocolFeePercent(uint256 _feePercent) external onlyOwner {
+//         protocolFeePercent = _feePercent;
+//     }
+
+//     function setSubjectFeePercent(uint256 _feePercent) external onlyOwner {
+//         subjectFeePercent = _feePercent;
+//     }
+
+//     function setTreasuryAddress(address newTreasuryAddress) external onlyOwner {
+//         require(newTreasuryAddress != address(0), "Invalid address");
+//         treasuryAddress = newTreasuryAddress;
+//     }
+
+//     function deposit(uint256 amount) public {
+//         mapDeposits[msg.sender] = mapDeposits[msg.sender].add(amount);
+//         require(
+//             suprToken.transferFrom(msg.sender, address(this), amount),
+//             "Deposit failed"
+//         );
+//         emit Deposit(msg.sender, amount);
+//     }
+
+//     function transfer(address toAddress, uint256 amount) public {
+//         require(mapDeposits[msg.sender] >= amount, "Insufficient funds");
+//         mapDeposits[msg.sender] = mapDeposits[msg.sender].sub(amount);
+//         mapDeposits[toAddress] = mapDeposits[toAddress].add(amount);
+//         emit Transfer(msg.sender, toAddress, amount);
+//     }
+
+//     function withdraw() public {
+//         uint256 amount = mapDeposits[msg.sender];
+//         require(amount > 0, "No deposit exists");
+//         delete mapDeposits[msg.sender];
+//         require(suprToken.transfer(msg.sender, amount), "Withdraw failed");
+//         emit Withdraw(msg.sender, amount);
+//     }
+
+//     function buyShares(uint256 groupId, uint256 amount) public {
+//         require(groupMembership.groupExists(groupId), "Group does not exist");
+//         uint256 treasuryFee = amount.mul(protocolFeePercent).div(100);
+//         uint256 subjectFee = amount.mul(subjectFeePercent).div(100);
+//         uint256 tokenId = groupMembership.joinGroup(
+//             groupId,
+//             amount,
+//             amount.sub(treasuryFee).sub(subjectFee),
+//             msg.sender
+//         );
+//         address creator = groupMembership.getGroupCreator(groupId);
+//         mapDeposits[msg.sender] = mapDeposits[msg.sender].sub(amount);
+//         mapDeposits[treasuryAddress] = mapDeposits[treasuryAddress].add(
+//             treasuryFee
+//         );
+//         mapDeposits[creator] = mapDeposits[creator].add(subjectFee);
+//         emit BoughtShares(msg.sender, groupId, tokenId, amount);
+//     }
+
+//     function sellShares(uint256 tokenId) public {
+//         uint256 groupId = tokenId.div(10 ** 12);
+//         require(groupMembership.groupExists(groupId), "Group does not exist");
+//         require(
+//             groupMembership.groupMembershipExists(tokenId),
+//             "Group membership does not exist"
+//         );
+//         console.log("before::groupMembership.leaveGroup");
+//         (uint256 returnAmount, uint256 burnAmount) = groupMembership.leaveGroup(
+//             groupId,
+//             tokenId,
+//             msg.sender
+//         );
+//         if (burnAmount > 0) {
+//             address deadAddress = 0x000000000000000000000000000000000000dEaD;
+//             mapDeposits[deadAddress] = mapDeposits[deadAddress].add(burnAmount);
+//         }
+//         mapDeposits[msg.sender] = mapDeposits[msg.sender].add(returnAmount);
+//         emit SoldShares(msg.sender, groupId, tokenId, returnAmount);
+//     }
+// }
